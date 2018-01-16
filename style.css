@@ -1,0 +1,31 @@
+h1{
+	color: blue;
+}
+
+.product-container{
+	display: flex;
+	justify-content: space-around;
+}
+
+.product{
+    color: orange;
+    border: 1px solid black;
+    height: 175px;
+    width: 250px;
+    text-align: center;
+}
+
+.quantity {
+	display: inline-block;
+}
+
+.update-btn{
+	margin-right: 10px;
+}
+
+#cart{
+	height: 200px;
+}
+#cart-total-container{
+	margin-top: 75px;
+}
