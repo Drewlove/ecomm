@@ -2,7 +2,8 @@
 var invData = [
 {name: "apples", price: 1.50}, 
 {name: "oranges", price: 1.25 },
-{name: "bananas", price: 2.10 }
+{name: "bananas", price: 2.10 },
+{name: "kiwis", price: 1.25}
 ]
 //Array of store products as objects
 var invArray = [];
