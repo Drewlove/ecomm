@@ -1,36 +1,51 @@
-header{
-	display: flex;
-    justify-content: space-around;
+body{
+	margin: 0px;
+}
+
+#header{
+	width: 100%;
+	height: 75px;
     background-color: blue;
 }
 
-header>h1{    
-	color: white;
+#header>h1{    
+    color: white;
     margin: 0px;
     height: 50px;
+    display: inline-block;
+    padding-top: 25px;
+    margin-left: 50px;
 }
 
-header>h1:hover{
+#header>h1:hover{
 	color: blue;
 	background-color: white;
 	cursor: pointer;
+}
+
+.greeting{
+	text-align: center;
+    margin-top: 50px;
+}
+
+.home-img{
+	width: 75%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 h1{
 	color: blue;
 }
 
-.product-container{
+.shop-container{
 	display: flex;
-	justify-content: space-around;
+	margin-left: 50px;
 }
 
-.product{
-    color: orange;
-    border: 1px solid black;
-    height: 175px;
-    width: 250px;
-    text-align: center;
+.product-img{
+	width: 75%;
 }
 
 .quantity {
@@ -41,9 +56,10 @@ h1{
 	margin-right: 10px;
 }
 
-#cart{
-	height: 200px;
+#cart-total{
+	text-align: center;
 }
+
 #cart-total-container{
 	margin-top: 75px;
 }
