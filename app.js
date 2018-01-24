@@ -25,9 +25,9 @@ document.getElementById("home").addEventListener("click", renderHomePage);
 
 //Data for name and price of store products
 var invData = [
-{name: "apple", price: 1.50, img: "./assets/apple-pic.jpg"}, 
-{name: "orange", price: 1.25, img: "./assets/orange-pic.jpg" },
-{name: "banana", price: 2.10, img: "./assets/banana-pic.jpg" },
+{name: "Apple", price: 1.50, img: "./assets/apple-pic.jpg", quantity: 100}, 
+{name: "Orange", price: 1.25, img: "./assets/orange-pic.jpg", quantity: 100 },
+{name: "Banana", price: 2.10, img: "./assets/banana-pic.jpg", quantity: 100 },
 ]
 //Array of store products as objects
 var invArray = [];
@@ -88,13 +88,20 @@ function EcommItem(name, price, img){
 	}
 	//removes item from user's cart
 	this.removeFromCart = function removeFromCart(){
+		console.log(self); 
 		cartArray.forEach(function (cartItem){
 			if(cartItem.name === self.name){
 				var cartItemIndex = cartArray.indexOf(cartItem); 
 				cartArray.splice(cartItemIndex, 1); 
-				renderProduct(cartArray, "cart"); 
 			}
 		})
+		var cartItem = document.getElementById(self.name+"-cart-item"); 
+		var removeBtn = document.getElementById(self.name+"-remove-btn")
+		console.log(cartItem, removeBtn); 
+
+		cartItem.parentElement.removeChild(cartItem);
+		removeBtn.parentElement.removeChild(removeBtn);
+
 		cartTotal(); 
 	}
 	//updates cart quantity: takes number entered by user within the cart display 
@@ -122,6 +129,15 @@ function createInvArray(dataArray, newArray){
 }
 //Loops through invData to create a new object, which is then pushed into the store's inventory array (invArray)
 createInvArray(invData, invArray); 
+
+function calcSubTotal(product, quantity){ 
+	product.quantity = parseInt(quantity); 
+	var subTotalText = document.getElementById(product.name+"-subTotal");
+	product.quantity = parseInt(quantity);
+	var subTotalValue = parseFloat(product.quantity*product.price).toFixed(2);
+	subTotalText.innerHTML="Subtotal: $"+subTotalValue;
+	cartTotal(); 
+}
 
 //loops through the objects in an array and creates HTML elements to display the object in the browser
 function renderProduct(arrayName, containerName){
@@ -160,45 +176,91 @@ function renderProduct(arrayName, containerName){
 		productContainer.appendChild(quantityTextContainer).appendChild(quantityText);
 		productContainer.appendChild(quantityInput); 
 
-		if(containerName==="inventory"){
-			quantityInput.placeholder= 1; 
-			quantityInput.setAttribute("id", itemObj.name+"-preCart-quantity");
-			var addToCartBtn = document.createElement("button"); 
-			var addToCartTxt = document.createTextNode("Add to Cart");
-			productContainer.appendChild(addToCartBtn).appendChild(addToCartTxt); 
-			addToCartBtn.addEventListener("click", itemObj.addToCart);
+		containerName==="inventory"
+		quantityInput.placeholder= 1; 
+		quantityInput.setAttribute("id", itemObj.name+"-preCart-quantity");
+		var addToCartBtn = document.createElement("button"); 
+		var addToCartTxt = document.createTextNode("Add to Cart");
+		productContainer.appendChild(addToCartBtn).appendChild(addToCartTxt); 
+		addToCartBtn.addEventListener("click", itemObj.addToCart);	
+	})
+}
 
-		} 
-		else if (containerName==="cart"){ 		
+function renderCart(){
+	var container = document.getElementById("main"); 
+	while (container.firstChild) {
+		container.removeChild(container.firstChild);
+	}
+	container.className="main-cart-container";
 
-			quantityInput.setAttribute("id", itemObj.name+"cart-quantity");
-			var totalPriceContainer = document.createElement("p"); 
-			var totalPrice = (itemObj.price*itemObj.quantity).toFixed(2); 
-			var totalPriceNumber = document.createTextNode("Total Price: $"+totalPrice);
-			productContainer.appendChild(totalPriceContainer).appendChild(totalPriceNumber); 
-			totalPriceContainer.setAttribute("id", itemObj.name+"-totalPrice");
-			document.getElementById(itemObj.name+"cart-quantity").addEventListener("click", itemObj.resetQuantity); 
+	var totalPriceContainer = document.createElement("h1"); 
+	var totalPriceText = document.createTextNode("Total Price: $"+cartTotal); 
+	totalPriceContainer.setAttribute("id", "total-price");
 
-			var updateQuantityBtn = document.createElement("button"); 
-			var updateQuantityTxt = document.createTextNode("Update Quantity"); 
-			productContainer.appendChild(updateQuantityBtn).appendChild(updateQuantityTxt); 
-			updateQuantityBtn.className="update-btn";
-			updateQuantityBtn.addEventListener("click", itemObj.updateQuantity)
+	container.appendChild(totalPriceContainer);
 
-			quantityInput.setAttribute("id", itemObj.name+"-cart-quantity"); 
-			quantityInput.value = itemObj.quantity; 
-			var removeFromCartBtn = document.createElement("button"); 
-			var RemoveFromCartTxt = document.createTextNode("Remove");
-			productContainer.appendChild(removeFromCartBtn).appendChild(RemoveFromCartTxt); 
-			removeFromCartBtn.addEventListener("click", itemObj.removeFromCart);
-			cartTotal(); 	
-		}		
+	cartArray.forEach(function (cartObj){
+		var cartItemContainer = document.createElement("div");
+		var cartObjImg = document.createElement("img"); 
+		var cartObjNameContainer = document.createElement("p"); 
+		var cartObjName = document.createTextNode(cartObj.name);  
+
+		var cartInfoContainer = document.createElement("div"); 
+
+
+		var priceTextContainer = document.createElement("p"); 
+		var priceText = document.createTextNode("Price: $"+parseFloat(cartObj.price).toFixed(2));
+		priceTextContainer.appendChild(priceText); 
+
+		var quantityTextContainer = document.createElement("p"); 
+		var quantityText = document.createTextNode("Quantity: ");
+		var quantityInput = document.createElement("input");
+		quantityInput.value=cartObj.quantity; 	
+		quantityInput.addEventListener("change", function(){
+			calcSubTotal(cartObj, quantityInput.value)
+			}); 
+		var subTotalTextContainer = document.createElement("p"); 
+		subTotalTextContainer.setAttribute("id", cartObj.name+"-subTotal"); 
+
+		var removeButton = document.createElement("button"); 
+		var removeButtonText = document.createTextNode("Remove"); 
+		removeButton.className = "remove-btn"; 
+		removeButton.setAttribute("id", cartObj.name+"-remove-btn")
+		removeButton.appendChild(removeButtonText);
+		removeButton.addEventListener("click", cartObj.removeFromCart);
+
+		container.appendChild(cartItemContainer); 
+		cartItemContainer.appendChild(cartInfoContainer);
+		cartItemContainer.appendChild(removeButton);
+
+		cartInfoContainer.appendChild(cartObjImg);
+		cartInfoContainer.appendChild(cartObjNameContainer).appendChild(cartObjName);
+		cartInfoContainer.appendChild(priceTextContainer); 
+		cartInfoContainer.appendChild(quantityTextContainer).appendChild(quantityText); 
+		cartInfoContainer.appendChild(quantityInput);
+		cartInfoContainer.appendChild(subTotalTextContainer); 
+
+		cartInfoContainer.className="cart-info-container";
+		cartInfoContainer.setAttribute("id", cartObj.name+"-cart-item"); 
+		cartObjImg.setAttribute("src", cartObj.img); 
+		cartObjImg.className="cart-img";
+		cartObjNameContainer.className="cart-item";
+		priceTextContainer.className="cart-item";
+		quantityTextContainer.className="cart-item";
+		subTotalTextContainer.className="cart-item";
+
+		calcSubTotal(cartObj, quantityInput.value);
+		cartTotal(); 
+
+		var text = document.getElementById(cartObj.name+"-subTotal"); 
 	})
 }
 
 
-document.getElementById("shop").addEventListener("click", function(){renderProduct(invArray, "inventory")}); 
-document.getElementById("cart").addEventListener("click", function(){renderProduct(cartArray, "cart")});
+document.getElementById("shop").addEventListener("click", function(){
+	renderProduct(invArray, "inventory")
+	}); 
+document.getElementById("cart").addEventListener("click", renderCart);
 window.onload = renderHomePage(); 
 
 

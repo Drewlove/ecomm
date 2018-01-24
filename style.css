@@ -1,3 +1,5 @@
+/*DISPLAY 1.1 TEST*/
+
 body{
 	margin: 0px;
 }
@@ -26,6 +28,10 @@ body{
 .greeting{
 	text-align: center;
     margin-top: 50px;
+}
+
+#title-text{
+	text-align: center;
 }
 
 .home-img{
@@ -63,3 +69,30 @@ h1{
 #cart-total-container{
 	margin-top: 75px;
 }
+
+#total-price{
+	text-align: center;
+}
+
+.cart-info-container{
+	display: flex;
+}
+
+.cart-img{
+	width: 250px;
+	height: 150px;
+}
+
+.cart-item{
+	margin: 0px 0px 0px 25px;
+}
+
+.cart-info-container > input{
+	height: 15px;
+}
+
+.remove-btn {
+	margin-bottom: 50px;
+    margin-left: 200px;
+}
+
