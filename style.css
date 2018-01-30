@@ -62,6 +62,10 @@ h1{
 	margin-right: 10px;
 }
 
+.error-message{
+	color: red;
+}
+
 #cart-total{
 	text-align: center;
 }
