@@ -1,3 +1,22 @@
+/*
+TODO: Error message for: 
+Update quantity on cart screen
+
+if you change quantity to a string, subtotal becomes a NaN. 
+Need to change the cart quantity, the data itself, to have a quantity of 0. 
+
+From the Cart page, update quantity should NOT renderCartPage at the end. Just get subtotal, cartTotal, and change
+the total that appears at the top. With the current set up there can be only one error message on the Cart page
+because it renders the whole page. 
+
+CartSubTotal and CartTotal functions should take care of render appropriate subtotal and cart total changes on the DOM. 
+
+Question: I'm frequently useing a forEach function to find which object in the cart matchesthe item being manipulated by the user.
+Is there a better way to find that match?
+Should I just make that process a helper function that's part of the Cart obj? 
+
+*/
+
 //Data for name and price of store products
 var invData = [
 {name: "Apple", price: 1.50, img: "./assets/apple-pic.jpg", quantity: 100},
@@ -10,21 +29,6 @@ function Shop(invData){
 	var self = this; 
 	
 	this.shopProductArray = []; 
-
-	this.quantityInputError= function quantityInputError(){
-		console.log("quantity input error")
-		// self.errorMessages = true; 
-		// userInputValue = input.value; 
-		// var selectedProduct = document.getElementById(productObj.name); 
-
-		// var warningMessageContainer = document.createElement("p"); 
-		// var warningText = document.createTextNode("Enter a number. ''"+input.value+"'' is not a number.");
-		// selectedProduct.appendChild(warningMessageContainer); 
-		// warningMessageContainer.appendChild(warningText); 
-		// warningMessageContainer.setAttribute("class", "error-message");
-		// self.errorMessage = input.value; 
-	}
-	
 
 	this.createShopProductArray = function createShopProductArray(){
 		invData.forEach(function (productObj){ 
@@ -75,12 +79,12 @@ function Shop(invData){
 			productContainer.appendChild(quantityTextContainer).appendChild(quantityText);
 			productContainer.appendChild(quantityInput);
 
-			quantityInput.placeholder= 1;
 			quantityInput.setAttribute("id", itemObj.name+"-shop-quantity");
 			var addToCartBtn = document.createElement("button");
 			addToCartBtn.setAttribute("id", itemObj.name+"-add-btn");
 			var addToCartTxt = document.createTextNode("Add to Cart");
 			productContainer.appendChild(addToCartBtn).appendChild(addToCartTxt);
+			//QUESTION: Should this call a method listed in the Cart object constructor, rather than the instance of it?
 			addToCartBtn.addEventListener("click", function(){
 				ecommCart.addItemToCart(itemObj)
 			});
@@ -155,12 +159,9 @@ function Cart(){
 					cartInfoContainer.setAttribute("id", cartObj.name+"-cart-item");
 					cartObjImg.setAttribute("src", cartObj.img);
 					cartObjImg.className="cart-img";
-					cartObjNameContainer.className="cart-item";
-					priceTextContainer.className="cart-item";
-					quantityTextContainer.className="cart-item";
-					subtotalTextContainer.className="cart-item";
-					cartItemContainer.setAttribute("id", cartObj.name+"-cart-item");
 					quantityInput.setAttribute("id", cartObj.name+"-cart-quantity");
+
+					errorMessageObj.count = 0; 
 				})
 			}
 
@@ -169,58 +170,122 @@ function Cart(){
 			//an array of product objects in the user's cart
 			this.cartArray = [];
 
-			//Tracks if the page has an error message. Error messages appear when user enters invalid quantity input.
+			var errorMessageObj = {
+				count: 0,
+				currentParent: "",
+			} 
+
+			function deleteErrorMessage(){
+				console.log("deleting"); 
+				console.log(errorMessageObj.count); 
+				var errorMessageParent = document.getElementById(errorMessageObj.currentParent); 
+				var previousErrorMessage = document.getElementById("error-message"); 
+				errorMessageParent.removeChild(previousErrorMessage); 			
+			}
+
+			this.errorMessage = function errorMessage(productObj){	
+				console.log(errorMessageObj.count); 
+				if(errorMessageObj.count === 2){
+					deleteErrorMessage(); 
+
+				}
+				var productID = document.getElementById(productObj.name); 
+				var messageContainer = document.createElement("p");
+				var message = document.createTextNode("Not a valid number."); 
+				productID.appendChild(messageContainer)
+				.appendChild(message); 	
+
+				messageContainer.setAttribute("id", "error-message");
+				errorMessageObj.count = 1; 
+				errorMessageObj.currentParent = productObj.name; 	
+			}
+
+			this.cartErrorMessage = function cartErrorMessage(itemObj){
+				var selectedProductObj; 
+				self.cartArray.forEach(function (cartObj){
+					if(cartObj.name === itemObj.name){
+						selectedProductObj = cartObj;
+					}
+				}) 
+				selectedProductObj.quantity = 0; 
+				self.subtotal(selectedProductObj); 
+				self.cartTotal();
+
+				var productID = document.getElementById(itemObj.name+"-cart-item"); 
+				var messageContainer = document.createElement("p");
+				var message = document.createTextNode("Not a valid number.");
+				messageContainer.appendChild(message);
+				productID.appendChild(messageContainer);	
+				messageContainer.className = "cart-error-msg";			 
+			}
 
 			//From the "Shop" page adds a new item to the user's cart, or updates the item's quantity in the user's cart
 			this.addItemToCart = function addItemToCart(itemObj){
 				var inputQuantity = document.getElementById(itemObj.name+"-shop-quantity");
 				var inputQuantityValue = parseInt(inputQuantity.value);
-				if(isNaN(inputQuantityValue)){ 
-					return Shop.call(this, quantityInputError); 
+
+				if(isNaN(inputQuantityValue) || typeof inputQuantityValue === "string"){ 
+					errorMessageObj.count += 1; 
+					return self.errorMessage(itemObj)
 				}; 
 
 				var itemAlreadyInCart = false;
 				//if product is already in user's cart, updates quantity
 				self.cartArray.forEach(function (cartObj){
-					if(cartObj.name === itemObj.name){
+					if(cartObj.name === itemObj.name){ 
 						itemAlreadyInCart = true;
 						cartObj.quantity += inputQuantityValue;
-						inputQuantity.value = "";
 						self.subtotal(cartObj);
+						inputQuantity.value = "";
+						if(errorMessageObj.count === 1){
+							errorMessageObj.count = 0;
+							deleteErrorMessage();
+						}
 						return;
 					};
 				});
 				//if product is not in user's cart, adds new item to user's cart with inputted quantity
 				if(itemAlreadyInCart === false){
+					console.log(errorMessageObj.count); 
 					itemObj.quantity = inputQuantityValue;
 					self.cartArray.push(itemObj);
 					self.subtotal(itemObj);
 					inputQuantity.value = "";
+					if(errorMessageObj.count === 1){
+						errorMessageObj.count = 0;
+						deleteErrorMessage();	  
+					} 
 					return;
 				};
 			};
-
-	//from the "Cart" page, updates the quantity of an item in the user's cart
-	this.updateQuantity = function updateQuantity(cartObj){
-		var value = parseInt(document.getElementById(cartObj.name+"-cart-quantity").value);
-		self.cartArray.forEach(function (cartItem){
-			if(cartItem.name === cartObj.name){
-				cartItem.quantity = value;
+			//from the "Cart" page, updates the quantity of an item in the user's cart
+			this.updateQuantity = function updateQuantity(cartObj){
+				var inputQuantityValue = parseInt(document.getElementById(cartObj.name+"-cart-quantity").value);
+				if(isNaN(inputQuantityValue) || typeof inputQuantityValue === "string"){ 
+					var quantityInput = document.getElementById(cartObj.name+"-cart-quantity");
+					quantityInput.value= 0;  
+					return self.cartErrorMessage(cartObj)
+				}; 
+				self.cartArray.forEach(function (cartItem){
+					if(cartItem.name === cartObj.name){
+						cartItem.quantity = inputQuantityValue ;
+					}
+				})
+				self.cartArray.forEach(function (cartItem){
+					cartItem.subtotal = self.subtotal(cartItem);
+				})
+				renderCart();
 			}
-		})
-		self.cartArray.forEach(function (cartItem){
-			cartItem.subtotal = self.subtotal(cartItem);
-		})
-		renderCart();
-	}
 
 	//calculates the subtotal property for each item in user's cart
-	this.subtotal = function subtotal(cartObj){
+	this.subtotal = function subtotal(cartObj){ 
+		console.log("subtotal"); 
 		return cartObj.subtotal = cartObj.quantity*cartObj.price;
 	}
 
 	//adds subtotals together to calculate total price
 	this.cartTotal = function cartTotal(){
+		console.log("cart total"); 
 		var totalPrice = 0;
 
 		self.cartArray.forEach(function (cartObj){

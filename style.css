@@ -62,7 +62,7 @@ h1{
 	margin-right: 10px;
 }
 
-.error-message{
+#error-message{
 	color: red;
 }
 
@@ -82,13 +82,17 @@ h1{
 	display: flex;
 }
 
+.cart-info-container * {
+	margin: 0px 0px 0px 25px;
+}
+
+.cart-error-msg{
+	color: red;
+}
+
 .cart-img{
 	width: 250px;
 	height: 150px;
-}
-
-.cart-item{
-	margin: 0px 0px 0px 25px;
 }
 
 .cart-info-container > input{
