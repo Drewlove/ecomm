@@ -1,11 +1,15 @@
-/*
-TODO: Error message for: 
-Update quantity on cart screen
+/* 
+General Questions: 
+1. Overall organization of code
+--invData
+--shop object constructor
+--cart object constructor
 
-if you change quantity to a string, subtotal becomes a NaN. 
-Need to change the cart quantity, the data itself, to have a quantity of 0. 
+--Sense that the cart object is unweildy, should some of those methods be taken out from cart and organized elsewhere?
+-- in particular the add item to cart functions that happen on the shop page, have shop 
 
-From the Cart page, update quantity should NOT renderCartPage at the end. Just get subtotal, cartTotal, and change
+
+***From the Cart page, update quantity should NOT renderCartPage at the end. Just get subtotal, cartTotal, and change
 the total that appears at the top. With the current set up there can be only one error message on the Cart page
 because it renders the whole page. 
 
@@ -226,6 +230,7 @@ function Cart(){
 
 				if(isNaN(inputQuantityValue) || typeof inputQuantityValue === "string"){ 
 					errorMessageObj.count += 1; 
+					inputQuantity.value = ""; 
 					return self.errorMessage(itemObj)
 				}; 
 
