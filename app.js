@@ -1,51 +1,31 @@
 /* 
-General Questions: 
-1. Overall organization of code
---invData
---shop object constructor
---cart object constructor
+ToDO: 
+**maybe use index and cartObj, look at removeFromCart function for example
 
---Sense that the cart object is unweildy, should some of those methods be taken out from cart and organized elsewhere?
--- in particular the add item to cart functions that happen on the shop page, have shop 
+put error messages in a separate object, declare a new object at the bottom as a global, 
+then call those methods within the cart object constructor 
 
-
-***From the Cart page, update quantity should NOT renderCartPage at the end. Just get subtotal, cartTotal, and change
-the total that appears at the top. With the current set up there can be only one error message on the Cart page
-because it renders the whole page. 
-
-CartSubTotal and CartTotal functions should take care of render appropriate subtotal and cart total changes on the DOM. 
-
-Question: I'm frequently useing a forEach function to find which object in the cart matchesthe item being manipulated by the user.
-Is there a better way to find that match?
-Should I just make that process a helper function that's part of the Cart obj? 
+get a linter 
 
 */
 
 //Data for name and price of store products
 var invData = [
-{name: "Apple", price: 1.50, img: "./assets/apple-pic.jpg", quantity: 100},
-{name: "Orange", price: 1.25, img: "./assets/orange-pic.jpg", quantity: 100 },
-{name: "Banana", price: 2.10, img: "./assets/banana-pic.jpg", quantity: 100 },
+{name: "Apple", price: 1.50, img: "./assets/apple-pic.jpg", invCount: 100},
+{name: "Orange", price: 1.25, img: "./assets/orange-pic.jpg", invCount: 100 },
+{name: "Banana", price: 2.10, img: "./assets/banana-pic.jpg", invCount: 100 },
 ]
+
+function Product(name, price, img, quantity){
+	this.name = name;
+	this.price = price;
+	this.img = img;
+	this.quantity = quantity;
+}
 
 //Object constructor for store products
 function Shop(invData){
 	var self = this; 
-	
-	this.shopProductArray = []; 
-
-	this.createShopProductArray = function createShopProductArray(){
-		invData.forEach(function (productObj){ 
-			var newProductObj = {}; 
-			newProductObj.name = productObj.name;
-			newProductObj.price = productObj.price;
-			newProductObj.img = productObj.img;
-			newProductObj.quantity = productObj.quantity;
-
-			self.shopProductArray.push(newProductObj)
-		})
-	}; 
-
 
 	function renderShop(){ 
 		var container = document.getElementById("main");
@@ -54,7 +34,7 @@ function Shop(invData){
 		}
 		container.className="shop-container";
 
-		self.shopProductArray.forEach(function (itemObj){ 
+		invData.forEach(function (itemObj){ 
 			var productContainer = document.createElement("div");
 			productContainer.setAttribute("id", itemObj.name);
 			productContainer.className="product";
@@ -82,12 +62,18 @@ function Shop(invData){
 			quantityInput.className="quantity"
 			productContainer.appendChild(quantityTextContainer).appendChild(quantityText);
 			productContainer.appendChild(quantityInput);
-
 			quantityInput.setAttribute("id", itemObj.name+"-shop-quantity");
+
 			var addToCartBtn = document.createElement("button");
 			addToCartBtn.setAttribute("id", itemObj.name+"-add-btn");
 			var addToCartTxt = document.createTextNode("Add to Cart");
 			productContainer.appendChild(addToCartBtn).appendChild(addToCartTxt);
+
+			var inventoryTextContainer = document.createElement("p"); 
+			var inventoryText = document.createTextNode("Available: "+itemObj.invCount); 
+			inventoryTextContainer.setAttribute("id", itemObj.name+"-inv-count")
+			inventoryTextContainer.appendChild(inventoryText); 
+			productContainer.appendChild(inventoryTextContainer); 
 			//QUESTION: Should this call a method listed in the Cart object constructor, rather than the instance of it?
 			addToCartBtn.addEventListener("click", function(){
 				ecommCart.addItemToCart(itemObj)
@@ -100,197 +86,180 @@ function Shop(invData){
 //object constructor for cart
 function Cart(){
 	var self = this;
-		//renders "Cart" page when user clicks on "Cart"
-		function renderCart(){
-			var container = document.getElementById("main");
-				while (container.firstChild) {
-					container.removeChild(container.firstChild);
-				}
-				container.className="main-cart-container";
 
-				var totalPriceContainer = document.createElement("h1");
-				var totalPriceTextContainer = document.createTextNode("Total Price: $"+ecommCart.cartTotal());
-				totalPriceContainer.appendChild(totalPriceTextContainer);
+	//an array of product objects in the user's cart
+	this.cartArray = [];
+	//renders "Cart" page when user clicks on "Cart"
 
-				container.appendChild(totalPriceContainer);
-				totalPriceContainer.setAttribute("id", "total-price");
+	document.getElementById("cart").addEventListener("click", function(){
+		self.renderCart();
+	});
 
-				(ecommCart.cartArray).forEach(function (cartObj){
-					var cartItemContainer = document.createElement("div");
-					var cartObjImg = document.createElement("img");
-					var cartObjNameContainer = document.createElement("p");
-					var cartObjName = document.createTextNode(cartObj.name);
-					var cartInfoContainer = document.createElement("div");
+	this.renderCart = function renderCart(){
+		var container = document.getElementById("main");
+		container.className="main-cart-container";
 
-					var priceTextContainer = document.createElement("p");
-					var priceText = document.createTextNode("Price: $"+parseFloat(cartObj.price).toFixed(2));
-					priceTextContainer.appendChild(priceText);
+		while (container.firstChild) {
+			container.removeChild(container.firstChild);
+		}
+		
+		var purchaseContainer = document.createElement("div");
+		purchaseContainer.setAttribute("id", "purchase-container") 
+		var totalPriceContainer = document.createElement("h1");
+		var totalPriceTextContainer = document.createTextNode("Total Price: $"+ecommCart.cartTotal());
+		totalPriceContainer.appendChild(totalPriceTextContainer);
+		purchaseContainer.appendChild(totalPriceContainer);
+		totalPriceContainer.setAttribute("id", "total-price");
 
-					var quantityTextContainer = document.createElement("p");
-					var quantityText = document.createTextNode("Quantity: ");
-					var quantityInput = document.createElement("input");
-					quantityInput.value=cartObj.quantity;
-					quantityInput.addEventListener("change", function(){
-						ecommCart.updateQuantity(cartObj)
-					});
+		var purchaseBtn = document.createElement("button");
+		var purchaseBtnText = document.createTextNode("Purchase"); 
+		purchaseBtn.setAttribute("id", "purchase-btn"); 
+		purchaseBtn.appendChild(purchaseBtnText); 
+		purchaseContainer.appendChild(purchaseBtn);
+		purchaseBtn.addEventListener("click", function(){
+			ecommOrder.renderOrder(self.cartArray);  
+		})  
 
-					var subtotalTextContainer = document.createElement("p");
-					var subtotalText = document.createTextNode("Subtotal: $"+parseFloat(cartObj.subtotal).toFixed(2));
-					subtotalTextContainer.appendChild(subtotalText);
-					subtotalTextContainer.setAttribute("id", cartObj.name+"-subtotal");
+		container.appendChild(purchaseContainer);
 
-					var removeButton = document.createElement("button");
-					var removeButtonText = document.createTextNode("Remove");
-					removeButton.className = "remove-btn";
-					removeButton.setAttribute("id", cartObj.name+"-remove-btn")
-					removeButton.appendChild(removeButtonText);
-					removeButton.addEventListener("click", function(){
-						ecommCart.removeFromCart(cartObj);
-					});
+		(ecommCart.cartArray).forEach(function (cartObj){
+			var cartItemContainer = document.createElement("div");
+			var cartObjImg = document.createElement("img");
+			var cartObjNameContainer = document.createElement("p");
+			var cartObjName = document.createTextNode(cartObj.name);
+			var cartInfoContainer = document.createElement("div");
 
-					container.appendChild(cartItemContainer);
-					cartItemContainer.appendChild(cartInfoContainer);
-					cartItemContainer.appendChild(removeButton);
+			var priceTextContainer = document.createElement("p");
+			var priceText = document.createTextNode("Price: $"+parseFloat(cartObj.price).toFixed(2));
+			priceTextContainer.appendChild(priceText);
 
-					cartInfoContainer.appendChild(cartObjImg);
-					cartInfoContainer.appendChild(cartObjNameContainer).appendChild(cartObjName);
-					cartInfoContainer.appendChild(priceTextContainer);
-					cartInfoContainer.appendChild(quantityTextContainer).appendChild(quantityText);
-					cartInfoContainer.appendChild(quantityInput);
-					cartInfoContainer.appendChild(subtotalTextContainer);
+			var quantityTextContainer = document.createElement("p");
+			var quantityText = document.createTextNode("Quantity: ");
+			var quantityInput = document.createElement("input");
+			quantityInput.value=cartObj.quantity;
+			quantityInput.addEventListener("change", function(){
+				ecommCart.updateQuantity(cartObj)
+			});
 
-					cartInfoContainer.className="cart-info-container";
-					cartInfoContainer.setAttribute("id", cartObj.name+"-cart-item");
-					cartObjImg.setAttribute("src", cartObj.img);
-					cartObjImg.className="cart-img";
-					quantityInput.setAttribute("id", cartObj.name+"-cart-quantity");
+			var subtotalTextContainer = document.createElement("p");
+			var subtotalText = document.createTextNode("Subtotal: $"+parseFloat(cartObj.subtotal).toFixed(2));
+			subtotalTextContainer.appendChild(subtotalText);
+			subtotalTextContainer.setAttribute("id", cartObj.name+"-subtotal");
 
-					errorMessageObj.count = 0; 
-				})
-			}
+			var removeButton = document.createElement("button");
+			var removeButtonText = document.createTextNode("Remove");
+			removeButton.className = "remove-btn";
+			removeButton.setAttribute("id", cartObj.name+"-remove-btn")
+			removeButton.appendChild(removeButtonText);
+			removeButton.addEventListener("click", function(){
+				ecommCart.removeFromCart(cartObj);
+			});
+			container.appendChild(cartItemContainer);
+			cartItemContainer.appendChild(cartInfoContainer);
+			cartItemContainer.appendChild(removeButton);
 
-			document.getElementById("cart").addEventListener("click", renderCart);
+			cartInfoContainer.appendChild(cartObjImg);
+			cartInfoContainer.appendChild(cartObjNameContainer).appendChild(cartObjName);
+			cartInfoContainer.appendChild(priceTextContainer);
+			cartInfoContainer.appendChild(quantityTextContainer).appendChild(quantityText);
+			cartInfoContainer.appendChild(quantityInput);
+			cartInfoContainer.appendChild(subtotalTextContainer);
 
-			//an array of product objects in the user's cart
-			this.cartArray = [];
+			cartInfoContainer.className="cart-info-container";
+			cartInfoContainer.setAttribute("id", cartObj.name+"-cart-item");
+			cartObjImg.setAttribute("src", cartObj.img);
+			cartObjImg.className="cart-img";
+			quantityInput.setAttribute("id", cartObj.name+"-cart-quantity");
 
-			var errorMessageObj = {
-				count: 0,
-				currentParent: "",
+			ecommErrorMessage.errorMessageObj.count = 0; 
+		})
+	}
+
+	this.modifyInvCount = function modifyInvCount(productObj, quantity){
+		var main = document.getElementById("main"); 
+		invData.forEach(function (invObj){
+			if(invObj.name === productObj.name && main.className==="shop-container"){
+				invObj.invCount -= quantity;
+				var invCountText = document.getElementById(invObj.name+"-inv-count");
+				invCountText.innerHTML="Available: "+invObj.invCount; 
+			} else if(invObj.name === productObj.name && main.className==="main-cart-container"){
+				invObj.invCount += quantity; 
+				console.log(invData); 
 			} 
+		});
+	};
 
-			function deleteErrorMessage(){
-				console.log("deleting"); 
-				console.log(errorMessageObj.count); 
-				var errorMessageParent = document.getElementById(errorMessageObj.currentParent); 
-				var previousErrorMessage = document.getElementById("error-message"); 
-				errorMessageParent.removeChild(previousErrorMessage); 			
-			}
+	//From the "Shop" page adds a new item to the user's cart, or updates the item's quantity in the user's cart
+	this.addItemToCart = function addItemToCart(itemObj){
+		var inputQuantity = document.getElementById(itemObj.name+"-shop-quantity");
+		var inputQuantityValue = parseInt(inputQuantity.value);
 
-			this.errorMessage = function errorMessage(productObj){	
-				console.log(errorMessageObj.count); 
-				if(errorMessageObj.count === 2){
-					deleteErrorMessage(); 
-
+		if(isNaN(inputQuantityValue) || typeof inputQuantityValue === "string"){ 
+			ecommErrorMessage.errorMessageObj.count += 1; 
+			inputQuantity.value = ""; 
+			return ecommErrorMessage.errorMessage(itemObj)
+		}; 
+		var itemAlreadyInCart = false;
+		//if product is already in user's cart, updates quantity
+		self.cartArray.forEach(function (cartObj){
+			if(cartObj.name === itemObj.name){ 
+				itemAlreadyInCart = true;
+				cartObj.quantity += inputQuantityValue;
+				self.subtotal(cartObj);
+				self.modifyInvCount(cartObj, inputQuantityValue);
+				inputQuantity.value = "";
+				if(ecommErrorMessage.errorMessageObj.count === 1){
+					ecommErrorMessage.errorMessageObj.count = 0;
+					ecommErrorMessage.deleteErrorMessage();
 				}
-				var productID = document.getElementById(productObj.name); 
-				var messageContainer = document.createElement("p");
-				var message = document.createTextNode("Not a valid number."); 
-				productID.appendChild(messageContainer)
-				.appendChild(message); 	
-
-				messageContainer.setAttribute("id", "error-message");
-				errorMessageObj.count = 1; 
-				errorMessageObj.currentParent = productObj.name; 	
-			}
-
-			this.cartErrorMessage = function cartErrorMessage(itemObj){
-				var selectedProductObj; 
-				self.cartArray.forEach(function (cartObj){
-					if(cartObj.name === itemObj.name){
-						selectedProductObj = cartObj;
-					}
-				}) 
-				selectedProductObj.quantity = 0; 
-				self.subtotal(selectedProductObj); 
-				self.cartTotal();
-
-				var productID = document.getElementById(itemObj.name+"-cart-item"); 
-				var messageContainer = document.createElement("p");
-				var message = document.createTextNode("Not a valid number.");
-				messageContainer.appendChild(message);
-				productID.appendChild(messageContainer);	
-				messageContainer.className = "cart-error-msg";			 
-			}
-
-			//From the "Shop" page adds a new item to the user's cart, or updates the item's quantity in the user's cart
-			this.addItemToCart = function addItemToCart(itemObj){
-				var inputQuantity = document.getElementById(itemObj.name+"-shop-quantity");
-				var inputQuantityValue = parseInt(inputQuantity.value);
-
-				if(isNaN(inputQuantityValue) || typeof inputQuantityValue === "string"){ 
-					errorMessageObj.count += 1; 
-					inputQuantity.value = ""; 
-					return self.errorMessage(itemObj)
-				}; 
-
-				var itemAlreadyInCart = false;
-				//if product is already in user's cart, updates quantity
-				self.cartArray.forEach(function (cartObj){
-					if(cartObj.name === itemObj.name){ 
-						itemAlreadyInCart = true;
-						cartObj.quantity += inputQuantityValue;
-						self.subtotal(cartObj);
-						inputQuantity.value = "";
-						if(errorMessageObj.count === 1){
-							errorMessageObj.count = 0;
-							deleteErrorMessage();
-						}
-						return;
-					};
-				});
-				//if product is not in user's cart, adds new item to user's cart with inputted quantity
-				if(itemAlreadyInCart === false){
-					console.log(errorMessageObj.count); 
-					itemObj.quantity = inputQuantityValue;
-					self.cartArray.push(itemObj);
-					self.subtotal(itemObj);
-					inputQuantity.value = "";
-					if(errorMessageObj.count === 1){
-						errorMessageObj.count = 0;
-						deleteErrorMessage();	  
-					} 
-					return;
-				};
+				return;
 			};
-			//from the "Cart" page, updates the quantity of an item in the user's cart
-			this.updateQuantity = function updateQuantity(cartObj){
-				var inputQuantityValue = parseInt(document.getElementById(cartObj.name+"-cart-quantity").value);
-				if(isNaN(inputQuantityValue) || typeof inputQuantityValue === "string"){ 
-					var quantityInput = document.getElementById(cartObj.name+"-cart-quantity");
-					quantityInput.value= 0;  
-					return self.cartErrorMessage(cartObj)
-				}; 
-				self.cartArray.forEach(function (cartItem){
-					if(cartItem.name === cartObj.name){
-						cartItem.quantity = inputQuantityValue ;
-					}
-				})
-				self.cartArray.forEach(function (cartItem){
-					cartItem.subtotal = self.subtotal(cartItem);
-				})
-				renderCart();
+		});
+		//if product is not in user's cart, creates new cartObj and adds to user's cart 
+		if(itemAlreadyInCart === false){
+			var cartObj = new Product(itemObj.name, itemObj.price, itemObj.img, inputQuantityValue ) 
+			self.cartArray.push(cartObj);
+			self.subtotal(cartObj);
+			self.modifyInvCount(cartObj, inputQuantityValue)
+			inputQuantity.value = "";
+			if(ecommErrorMessage.errorMessageObj.count === 1){
+				ecommErrorMessage.errorMessageObj.count = 0;
+				ecommErrorMessage.deleteErrorMessage();	  
+			} 
+			return;
+		};
+	};
+	//from the "Cart" page, updates the quantity of an item in the user's cart
+	this.updateQuantity = function updateQuantity(cartObj){
+		var inputQuantityValue = parseInt(document.getElementById(cartObj.name+"-cart-quantity").value);
+		if(isNaN(inputQuantityValue) || typeof inputQuantityValue === "string"){ 
+			var quantityInput = document.getElementById(cartObj.name+"-cart-quantity");
+			quantityInput.value= 0; 
+			self.modifyInvCount(cartObj, cartObj.quantity); 
+			cartObj.quantity = 0; 
+			self.subtotal(cartObj); 
+			self.cartTotal(); 
+			self.renderCart(); 
+			return ecommErrorMessage.cartErrorMessage(cartObj)
+		}; 
+		self.cartArray.forEach(function (cartItem){
+			if(cartItem.name === cartObj.name){
+				var cartItemDifference = cartItem.quantity - inputQuantityValue; 
+				cartItem.quantity = inputQuantityValue ;
+				cartItem.subtotal = self.subtotal(cartItem);
+				self.modifyInvCount(cartItem, cartItemDifference); 
 			}
+		}); 
+		self.renderCart();;
+	};
 
 	//calculates the subtotal property for each item in user's cart
 	this.subtotal = function subtotal(cartObj){ 
-		console.log("subtotal"); 
 		return cartObj.subtotal = cartObj.quantity*cartObj.price;
-	}
+	};
 
 	//adds subtotals together to calculate total price
-	this.cartTotal = function cartTotal(){
-		console.log("cart total"); 
+	this.cartTotal = function cartTotal(){ 
 		var totalPrice = 0;
 
 		self.cartArray.forEach(function (cartObj){
@@ -302,10 +271,96 @@ function Cart(){
 	//removes item from cart
 	this.removeFromCart = function removeFromCart(cartObj){
 		var cartItemIndex = self.cartArray.indexOf(cartObj);
+		var cartProductQuantity = self.cartArray[cartItemIndex].quantity; 
+		self.modifyInvCount(cartObj, cartProductQuantity); 
 		self.cartArray.splice(cartItemIndex, 1);
-		renderCart();
-	}
+		self.renderCart();
+	};
 };
+
+function ErrorMessage(){
+	var self = this; 
+	this.errorMessageObj = {
+		count: 0,
+		currentParent: "",
+	} 
+
+	this.deleteErrorMessage = function deleteErrorMessage(){ 
+		var errorMessageParent = document.getElementById(self.errorMessageObj.currentParent); 
+		var previousErrorMessage = document.getElementById("error-message"); 
+		errorMessageParent.removeChild(previousErrorMessage); 			
+	}
+
+	this.errorMessage = function errorMessage(productObj){	 
+		if(self.errorMessageObj.count === 2){
+			self.deleteErrorMessage(); 
+
+		}
+		var productID = document.getElementById(productObj.name); 
+		var messageContainer = document.createElement("p");
+		var message = document.createTextNode("Not a valid number."); 
+		productID.appendChild(messageContainer)
+		.appendChild(message); 	
+
+		messageContainer.setAttribute("id", "error-message");
+		self.errorMessageObj.count = 1; 
+		self.errorMessageObj.currentParent = productObj.name; 	
+	}
+
+	this.cartErrorMessage = function cartErrorMessage(itemObj){
+		var selectedProductObj; 
+		ecommCart.cartArray.forEach(function (cartObj){
+			if(cartObj.name === itemObj.name){
+				selectedProductObj = cartObj;
+			}
+		}) 
+		selectedProductObj.quantity = 0; 
+		ecommCart.subtotal(selectedProductObj); 
+		ecommCart.cartTotal();
+
+		var productID = document.getElementById(itemObj.name+"-cart-item"); 
+		var messageContainer = document.createElement("p");
+		var message = document.createTextNode("Not a valid number.");
+		messageContainer.appendChild(message);
+		productID.appendChild(messageContainer);	
+		messageContainer.className = "cart-error-msg";			 
+	}
+}
+
+function Order(){
+	var self = this;
+	this.orderHistory = []; 
+
+	this.renderOrder = function renderOrder(cartArray){
+		var main = document.getElementById("main"); 
+		while(main.firstChild){
+			main.removeChild(main.firstChild); 
+		}
+		var orderContainer = document.createElement("div"); 
+		var orderTextContainer = document.createElement("h1"); 
+		var orderText = document.createTextNode("Thank you for shopping at the Produce Emporium!")
+		main.appendChild(orderContainer).appendChild(orderTextContainer).appendChild(orderText);
+
+		cartArray.forEach(function (cartObj){
+			var orderItemContainer = document.createElement("ul"); 
+			var orderItem = document.createElement("li"); 
+			var orderItemText = document.createTextNode(cartObj.quantity+" "+cartObj.name+" $"+cartObj.price.toFixed(2)+" $"+cartObj.subtotal.toFixed(2)); 
+
+			main.appendChild(orderItemContainer); 
+			orderItemContainer.appendChild(orderItem).appendChild(orderItemText); 
+		}) 
+		self.generateOrder(cartArray)
+	}
+
+	this.generateOrder = function generateOrder(cartArray){
+		self.orderHistory.push(cartArray); 
+		self.clearCart(); 
+	}
+
+	this.clearCart = function clearCart(){
+		ecommCart.cartArray = []; 
+	}
+}
 
 //renders the "Home" page when user clicks on "Home"
 function renderHomePage(){
@@ -328,10 +383,11 @@ function renderHomePage(){
 //calls render function on array of inventory objects
 document.getElementById("home").addEventListener("click", renderHomePage);
 
-
 var ecommCart = new Cart();
 var ecommShop = new Shop(invData); 
-ecommShop.createShopProductArray(); 
+var ecommOrder = new Order(); 
+var ecommErrorMessage = new ErrorMessage(); 
+
 
 //render "Home" page on load
 window.onload = renderHomePage();

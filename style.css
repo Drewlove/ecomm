@@ -66,6 +66,28 @@ h1{
 	color: red;
 }
 
+#purchase-container{
+	display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+#purchase-btn{
+	height: 75px;
+    border-radius: 10px;
+    width: 150px;
+    background-color: blue;
+    color: white;
+    font-size: 20px;
+}
+
+#purchase-btn:hover{
+	background-color: white; 
+	color: blue;
+	cursor: pointer;
+}
+
+
 #cart-total{
 	text-align: center;
 }
