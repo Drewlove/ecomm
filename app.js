@@ -1,6 +1,10 @@
 /* 
 ToDO: 
-**maybe use index and cartObj, look at removeFromCart function for example
+create modal when you render the shop page
+the confirmMessage should just change the display property of modal, NOT create a modal every time it's invoked
+
+next: quantities on the shop, and cart page are not updating correctly. Porbably also true for inventory 
+
 
 something
 
@@ -198,37 +202,7 @@ function Cart(){
 			inputQuantity.value = ""; 
 			return ecommErrorMessage.errorMessage(itemObj)
 		}; 
-		var itemAlreadyInCart = false;
-		//if product is already in user's cart, updates quantity
-		self.cartArray.forEach(function (cartObj){
-			if(cartObj.name === itemObj.name){ 
-				itemAlreadyInCart = true;
-				cartObj.quantity += inputQuantityValue;
-				self.subtotal(cartObj);
-				self.modifyInvCount(cartObj, inputQuantityValue);
-				var createConfirmMessage = new ConfirmMessage(itemObj, inputQuantityValue); 
-				inputQuantity.value = "";
-				if(ecommErrorMessage.errorMessageObj.count === 1){
-					ecommErrorMessage.errorMessageObj.count = 0;
-					ecommErrorMessage.deleteErrorMessage();
-				}
-				return;
-			};
-		});
-		//if product is not in user's cart, creates new cartObj and adds to user's cart 
-		if(itemAlreadyInCart === false){
-			var cartObj = new Product(itemObj.name, itemObj.price, itemObj.img, inputQuantityValue ) 
-			self.cartArray.push(cartObj);
-			self.subtotal(cartObj);
-			self.modifyInvCount(cartObj, inputQuantityValue)
-			var createConfirmMessage = new ConfirmMessage(itemObj, inputQuantityValue);
-			inputQuantity.value = "";
-			if(ecommErrorMessage.errorMessageObj.count === 1){
-				ecommErrorMessage.errorMessageObj.count = 0;
-				ecommErrorMessage.deleteErrorMessage();	  
-			} 
-			return;
-		};
+		var createConfirmMessage = ecommConfirm.renderConfirmMessage(itemObj, inputQuantityValue);
 	};
 	//from the "Cart" page, updates the quantity of an item in the user's cart
 	this.updateQuantity = function updateQuantity(cartObj){
@@ -280,24 +254,82 @@ function Cart(){
 };
 
 function ConfirmMessage(productObj, quantity){
-	var body = document.getElementsByTagName("body")[0];
-	var modal = document.createElement("div"); 
-	var modalContent = document.createElement("div");
-	var textContainer = document.createElement("p"); 
-	var text = document.createTextNode("Add "+quantity+" "+productObj.name+" to cart?")
-	var confirmBtn = document.createElement("button");
-	var confirmBtnText = document.createTextNode("Confirm");
-	var cancelBtn = document.createElement("button"); 
-	var cancelBtnText = document.createTextNode("Cancel"); 
+	var self = this; 
 
-	body.appendChild(modal).appendChild(modalContent); 
-	modalContent.appendChild(textContainer).appendChild(text);
-	modalContent.appendChild(confirmBtn).appendChild(confirmBtnText)
-	modalContent.appendChild(cancelBtn).appendChild(cancelBtnText);
+	this.renderConfirmMessage = function renderConfirmMessage(productObj, quantity){
+		var body = document.getElementsByTagName("body")[0];
+		var modal = document.createElement("div"); 
+		var modalContent = document.createElement("div");
+		var textContainer = document.createElement("p"); 
+		var text = document.createTextNode("Add "+quantity+" "+productObj.name+" to cart?")
+		var confirmBtn = document.createElement("button");
+		var confirmBtnText = document.createTextNode("Confirm");
+		var cancelBtn = document.createElement("button"); 
+		var cancelBtnText = document.createTextNode("Cancel"); 
 
-	modal.setAttribute("id", "modal")
-	modalContent.setAttribute("id", "modal-content");
+		body.appendChild(modal).appendChild(modalContent); 
+		modalContent.appendChild(textContainer).appendChild(text);
+		modalContent.appendChild(confirmBtn).appendChild(confirmBtnText)
+		modalContent.appendChild(cancelBtn).appendChild(cancelBtnText);
+
+		confirmBtn.addEventListener("click", function(){
+			confirmAddToCart(productObj)	
+		})
+		cancelBtn.addEventListener("click", cancelAddToCart)
+
+		modal.setAttribute("id", "modal")
+		modalContent.setAttribute("id", "modal-content");
+	}
+	
+	function confirmAddToCart(productObj){
+		var inputQuantity = document.getElementById(productObj.name+"-shop-quantity"); 
+		var itemAlreadyInCart = false;
+		//if product is already in user's cart, updates quantity
+		ecommCart.cartArray.forEach(function (cartObj){
+			if(cartObj.name === productObj.name){ 
+				itemAlreadyInCart = true;
+				
+				cartObj.quantity += quantity;
+				ecommCart.subtotal(cartObj);
+				ecommCart.modifyInvCount(cartObj, quantity);
+				 
+				inputQuantity.value = "";
+				if(ecommErrorMessage.errorMessageObj.count === 1){
+					ecommErrorMessage.errorMessageObj.count = 0;
+					ecommErrorMessage.deleteErrorMessage();
+				}
+				deleteModal(); 
+				return;
+			};
+		});
+		//if product is not in user's cart, creates new cartObj and adds to user's cart 
+		if(itemAlreadyInCart === false){
+			var cartObj = new Product(productObj.name, productObj.price, productObj.img, quantity ) 
+			ecommCart.cartArray.push(cartObj);
+			ecommCart.subtotal(cartObj);
+			ecommCart.modifyInvCount(cartObj, quantity)
+			inputQuantity.value = "";
+			if(ecommErrorMessage.errorMessageObj.count === 1){
+				ecommErrorMessage.errorMessageObj.count = 0;
+				ecommErrorMessage.deleteErrorMessage();	  
+			} 
+			deleteModal();  
+			return;
+		};
+	};
+
+	function cancelAddToCart(){
+		console.log("not adding")
+	}
+
+	function deleteModal(){
+		var modal = document.getElementById("modal"); 
+		while(modal.firstChild){
+			modal.removeChild(modal.firstChild)
+		}
+	}
 }
+
 
 function ErrorMessage(){
 	var self = this; 
@@ -436,7 +468,8 @@ document.getElementById("home").addEventListener("click", renderHomePage);
 var ecommCart = new Cart();
 var ecommShop = new Shop(invData); 
 var ecommOrder = new Order(); 
-var ecommErrorMessage = new ErrorMessage(); 
+var ecommErrorMessage = new ErrorMessage();
+var ecommConfirm = new ConfirmMessage();  
 
 
 //render "Home" page on load
