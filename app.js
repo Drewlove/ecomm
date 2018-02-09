@@ -2,8 +2,7 @@
 ToDO: 
 **maybe use index and cartObj, look at removeFromCart function for example
 
-put error messages in a separate object, declare a new object at the bottom as a global, 
-then call those methods within the cart object constructor 
+
 
 get a linter 
 
@@ -207,6 +206,7 @@ function Cart(){
 				cartObj.quantity += inputQuantityValue;
 				self.subtotal(cartObj);
 				self.modifyInvCount(cartObj, inputQuantityValue);
+				var createConfirmMessage = new ConfirmMessage(itemObj, inputQuantityValue); 
 				inputQuantity.value = "";
 				if(ecommErrorMessage.errorMessageObj.count === 1){
 					ecommErrorMessage.errorMessageObj.count = 0;
@@ -221,6 +221,7 @@ function Cart(){
 			self.cartArray.push(cartObj);
 			self.subtotal(cartObj);
 			self.modifyInvCount(cartObj, inputQuantityValue)
+			var createConfirmMessage = new ConfirmMessage(itemObj, inputQuantityValue);
 			inputQuantity.value = "";
 			if(ecommErrorMessage.errorMessageObj.count === 1){
 				ecommErrorMessage.errorMessageObj.count = 0;
@@ -278,6 +279,26 @@ function Cart(){
 	};
 };
 
+function ConfirmMessage(productObj, quantity){
+	var body = document.getElementsByTagName("body")[0];
+	var modal = document.createElement("div"); 
+	var modalContent = document.createElement("div");
+	var textContainer = document.createElement("p"); 
+	var text = document.createTextNode("Add "+quantity+" "+productObj.name+" to cart?")
+	var confirmBtn = document.createElement("button");
+	var confirmBtnText = document.createTextNode("Confirm");
+	var cancelBtn = document.createElement("button"); 
+	var cancelBtnText = document.createTextNode("Cancel"); 
+
+	body.appendChild(modal).appendChild(modalContent); 
+	modalContent.appendChild(textContainer).appendChild(text);
+	modalContent.appendChild(confirmBtn).appendChild(confirmBtnText)
+	modalContent.appendChild(cancelBtn).appendChild(cancelBtnText);
+
+	modal.setAttribute("id", "modal")
+	modalContent.setAttribute("id", "modal-content");
+}
+
 function ErrorMessage(){
 	var self = this; 
 	this.errorMessageObj = {
@@ -329,6 +350,13 @@ function ErrorMessage(){
 
 function Order(){
 	var self = this;
+	this.orderTotal = function orderTotal(cartArray){
+		var total = 0; 
+		cartArray.forEach(function (cartObj){
+			total += cartObj.subtotal;
+		});
+		return total 
+	} 
 	this.orderHistory = []; 
 
 	this.renderOrder = function renderOrder(cartArray){
@@ -338,17 +366,39 @@ function Order(){
 		}
 		var orderContainer = document.createElement("div"); 
 		var orderTextContainer = document.createElement("h1"); 
-		var orderText = document.createTextNode("Thank you for shopping at the Produce Emporium!")
+		var orderText = document.createTextNode("Thank you for your purchase!")
 		main.appendChild(orderContainer).appendChild(orderTextContainer).appendChild(orderText);
 
 		cartArray.forEach(function (cartObj){
-			var orderItemContainer = document.createElement("ul"); 
-			var orderItem = document.createElement("li"); 
-			var orderItemText = document.createTextNode(cartObj.quantity+" "+cartObj.name+" $"+cartObj.price.toFixed(2)+" $"+cartObj.subtotal.toFixed(2)); 
+			var itemRow = document.createElement("div");
+			itemRow.className="purchase-item";  
+			main.appendChild(itemRow); 
 
-			main.appendChild(orderItemContainer); 
-			orderItemContainer.appendChild(orderItem).appendChild(orderItemText); 
+			var productQuantity = document.createElement("h3"); 
+			var productQuantityText = document.createTextNode(cartObj.quantity); 
+			productQuantity.appendChild(productQuantityText);
+			itemRow.appendChild(productQuantity); 
+
+			var productName = document.createElement("h3"); 
+			var productNameText = document.createTextNode(cartObj.name); 
+			productName.appendChild(productNameText);
+			itemRow.appendChild(productName); 
+
+			var productPrice = document.createElement("h3"); 
+			var productPriceText = document.createTextNode("$"+cartObj.price.toFixed(2)); 
+			productPrice.appendChild(productPriceText);
+			itemRow.appendChild(productPrice);
+
+			var productSubtotal = document.createElement("h3"); 
+			var productSubtotalText = document.createTextNode("$"+cartObj.subtotal.toFixed(2)); 
+			productSubtotal.appendChild(productSubtotalText);
+			itemRow.appendChild(productSubtotal); 
 		}) 
+		var totalTextContainer = document.createElement("h3"); 
+		var totalText = document.createTextNode("Total: $"+self.orderTotal(cartArray)); 
+		totalTextContainer.appendChild(totalText); 
+		main.appendChild(totalTextContainer); 
+
 		self.generateOrder(cartArray)
 	}
 
