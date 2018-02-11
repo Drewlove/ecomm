@@ -1,17 +1,13 @@
 /* 
-ToDO: 
-create modal when you render the shop page
-the confirmMessage should just change the display property of modal, NOT create a modal every time it's invoked
-
-next: quantities on the shop, and cart page are not updating correctly. Porbably also true for inventory 
-
-
-something
-
-get a linter 
-
+addToCartBtn.addEventListener("click", function(){
+				createModal(itemObj); 			
+			})
+First, create function that checks: 
+*isNaN
+*Quantity in stock
+if quantity is in stock, and input is Number, then invoke createModal
+if not, invoke error message
 */
-
 //Data for name and price of store products
 var invData = [
 {name: "Apple", price: 1.50, img: "./assets/apple-pic.jpg", invCount: 100},
@@ -29,6 +25,8 @@ function Product(name, price, img, quantity){
 //Object constructor for store products
 function Shop(invData){
 	var self = this; 
+
+	document.getElementById("shop").addEventListener("click", renderShop); 
 
 	function renderShop(){ 
 		var container = document.getElementById("main");
@@ -76,29 +74,77 @@ function Shop(invData){
 			var inventoryText = document.createTextNode("Available: "+itemObj.invCount); 
 			inventoryTextContainer.setAttribute("id", itemObj.name+"-inv-count")
 			inventoryTextContainer.appendChild(inventoryText); 
-			productContainer.appendChild(inventoryTextContainer); 
+			productContainer.appendChild(inventoryTextContainer);
 			//QUESTION: Should this call a method listed in the Cart object constructor, rather than the instance of it?
 			addToCartBtn.addEventListener("click", function(){
-				ecommCart.addItemToCart(itemObj)
-			});
+				createModal(itemObj); 			
+			})
 		});
+		var modalContainer = document.createElement("div"); 
+		modalContainer.setAttribute("id", "modal-container");
+		container.appendChild(modalContainer); 
 	};
-	document.getElementById("shop").addEventListener("click", renderShop);	
+
+	function createModal(itemObj){
+		var modalContainer = document.getElementById("modal-container");
+		var modal = document.createElement("div"); 
+		var modalContent = document.createElement("div");
+		var textContainer = document.createElement("p"); 
+		var confirmBtn = document.createElement("button");
+		var confirmBtnText = document.createTextNode("Confirm");
+		var cancelBtn = document.createElement("button"); 
+		var cancelBtnText = document.createTextNode("Cancel"); 
+
+		modalContainer.appendChild(modal).appendChild(modalContent); 
+		modalContent.appendChild(textContainer); 
+		modalContent.appendChild(confirmBtn).appendChild(confirmBtnText)
+		modalContent.appendChild(cancelBtn).appendChild(cancelBtnText);
+
+		modal.setAttribute("id", "modal");
+		modalContent.setAttribute("id", "modal-content");
+		textContainer.setAttribute("id", "modal-text");
+		confirmBtn.setAttribute("id", "confirm-btn");
+		cancelBtn.setAttribute("id", "cancel-btn"); 
+
+
+		var modal = document.getElementById("modal"); 
+		var modalText = document.getElementById("modal-text"); 
+		var inputQuantity = document.getElementById(itemObj.name+"-shop-quantity"); 
+		modalText.innerHTML = "Add "+parseInt(inputQuantity.value)+" "+itemObj.name+" to cart?";
+		modal.style.display="initial";
+		var confirmBtn = document.getElementById("confirm-btn")
+
+		confirmBtn.addEventListener("click", function(){
+			ecommCart.addItemToCart(itemObj, parseInt(inputQuantity.value));
+			deleteModal(); 	
+		}); 
+		cancelBtn.addEventListener("click", function(){
+			clearInput(itemObj); 
+			deleteModal(); 
+		});
+	}
+
+	function deleteModal(){
+		var modalContainer = document.getElementById("modal-container");
+		modalContainer.removeChild(modalContainer.firstChild) 
+	}
+
+	function clearInput(itemObj){
+		var input = document.getElementById(itemObj.name+"-shop-quantity"); 
+		input.value = ""; 
+	}
 };
 
 //object constructor for cart
 function Cart(){
 	var self = this;
-
 	//an array of product objects in the user's cart
 	this.cartArray = [];
 	//renders "Cart" page when user clicks on "Cart"
 
-	document.getElementById("cart").addEventListener("click", function(){
-		self.renderCart();
-	});
+	document.getElementById("cart").addEventListener("click", renderCart); 
 
-	this.renderCart = function renderCart(){
+	function renderCart(){
 		var container = document.getElementById("main");
 		container.className="main-cart-container";
 
@@ -122,7 +168,6 @@ function Cart(){
 		purchaseBtn.addEventListener("click", function(){
 			ecommOrder.renderOrder(self.cartArray);  
 		})  
-
 		container.appendChild(purchaseContainer);
 
 		(ecommCart.cartArray).forEach(function (cartObj){
@@ -178,6 +223,35 @@ function Cart(){
 		})
 	}
 
+	//From the "Shop" page adds a new item to the user's cart, or updates the item's quantity in the user's cart
+	this.addItemToCart = function addItemToCart(itemObj, quantity){
+		var inputQuantity = document.getElementById(itemObj.name+"-shop-quantity");
+		var modal = document.getElementById("modal");
+		var itemAlreadyInCart = false; 
+
+		ecommCart.cartArray.forEach(function (cartObj){
+			if(cartObj.name === itemObj.name){
+				itemAlreadyInCart = true; 
+				cartObj.quantity += quantity; 
+				return self.modifyInvCount(itemObj, quantity)
+			};
+		});
+
+		//if product is not in user's cart, creates new cartObj and adds to user's cart 
+		if(itemAlreadyInCart === false){
+			var cartObj = new Product(itemObj.name, itemObj.price, itemObj.img, quantity ) 
+			ecommCart.cartArray.push(cartObj);
+			ecommCart.subtotal(cartObj);
+			ecommCart.modifyInvCount(cartObj, quantity)
+			inputQuantity.value = "";
+			if(ecommErrorMessage.errorMessageObj.count === 1){
+				ecommErrorMessage.errorMessageObj.count = 0;
+				ecommErrorMessage.deleteErrorMessage();	  
+			}  
+			return;
+		};
+	};
+
 	this.modifyInvCount = function modifyInvCount(productObj, quantity){
 		var main = document.getElementById("main"); 
 		invData.forEach(function (invObj){
@@ -185,25 +259,14 @@ function Cart(){
 				invObj.invCount -= quantity;
 				var invCountText = document.getElementById(invObj.name+"-inv-count");
 				invCountText.innerHTML="Available: "+invObj.invCount; 
-			} else if(invObj.name === productObj.name && main.className==="main-cart-container"){
+			} 
+			//updates available quantity on cart page 
+			else if(invObj.name === productObj.name && main.className==="main-cart-container"){
 				invObj.invCount += quantity; 
-				console.log(invData); 
 			} 
 		});
 	};
 
-	//From the "Shop" page adds a new item to the user's cart, or updates the item's quantity in the user's cart
-	this.addItemToCart = function addItemToCart(itemObj){
-		var inputQuantity = document.getElementById(itemObj.name+"-shop-quantity");
-		var inputQuantityValue = parseInt(inputQuantity.value);
-
-		if(isNaN(inputQuantityValue) || typeof inputQuantityValue === "string"){ 
-			ecommErrorMessage.errorMessageObj.count += 1; 
-			inputQuantity.value = ""; 
-			return ecommErrorMessage.errorMessage(itemObj)
-		}; 
-		var createConfirmMessage = ecommConfirm.renderConfirmMessage(itemObj, inputQuantityValue);
-	};
 	//from the "Cart" page, updates the quantity of an item in the user's cart
 	this.updateQuantity = function updateQuantity(cartObj){
 		var inputQuantityValue = parseInt(document.getElementById(cartObj.name+"-cart-quantity").value);
@@ -214,7 +277,7 @@ function Cart(){
 			cartObj.quantity = 0; 
 			self.subtotal(cartObj); 
 			self.cartTotal(); 
-			self.renderCart(); 
+			renderCart(); 
 			return ecommErrorMessage.cartErrorMessage(cartObj)
 		}; 
 		self.cartArray.forEach(function (cartItem){
@@ -225,12 +288,11 @@ function Cart(){
 				self.modifyInvCount(cartItem, cartItemDifference); 
 			}
 		}); 
-		self.renderCart();;
+		renderCart();;
 	};
-
 	//calculates the subtotal property for each item in user's cart
-	this.subtotal = function subtotal(cartObj){ 
-		return cartObj.subtotal = cartObj.quantity*cartObj.price;
+	this.subtotal = function subtotal(cartObj){
+		cartObj.subtotal = (cartObj.quantity*cartObj.price).toFixed(2);
 	};
 
 	//adds subtotals together to calculate total price
@@ -249,7 +311,7 @@ function Cart(){
 		var cartProductQuantity = self.cartArray[cartItemIndex].quantity; 
 		self.modifyInvCount(cartObj, cartProductQuantity); 
 		self.cartArray.splice(cartItemIndex, 1);
-		self.renderCart();
+		renderCart();
 	};
 };
 
@@ -257,76 +319,12 @@ function ConfirmMessage(productObj, quantity){
 	var self = this; 
 
 	this.renderConfirmMessage = function renderConfirmMessage(productObj, quantity){
-		var body = document.getElementsByTagName("body")[0];
-		var modal = document.createElement("div"); 
-		var modalContent = document.createElement("div");
-		var textContainer = document.createElement("p"); 
-		var text = document.createTextNode("Add "+quantity+" "+productObj.name+" to cart?")
-		var confirmBtn = document.createElement("button");
-		var confirmBtnText = document.createTextNode("Confirm");
-		var cancelBtn = document.createElement("button"); 
-		var cancelBtnText = document.createTextNode("Cancel"); 
-
-		body.appendChild(modal).appendChild(modalContent); 
-		modalContent.appendChild(textContainer).appendChild(text);
-		modalContent.appendChild(confirmBtn).appendChild(confirmBtnText)
-		modalContent.appendChild(cancelBtn).appendChild(cancelBtnText);
-
-		confirmBtn.addEventListener("click", function(){
-			confirmAddToCart(productObj)	
-		})
-		cancelBtn.addEventListener("click", cancelAddToCart)
-
-		modal.setAttribute("id", "modal")
-		modalContent.setAttribute("id", "modal-content");
+		console.log("stuff");
 	}
 	
-	function confirmAddToCart(productObj){
-		var inputQuantity = document.getElementById(productObj.name+"-shop-quantity"); 
-		var itemAlreadyInCart = false;
-		//if product is already in user's cart, updates quantity
-		ecommCart.cartArray.forEach(function (cartObj){
-			if(cartObj.name === productObj.name){ 
-				itemAlreadyInCart = true;
-				
-				cartObj.quantity += quantity;
-				ecommCart.subtotal(cartObj);
-				ecommCart.modifyInvCount(cartObj, quantity);
-				 
-				inputQuantity.value = "";
-				if(ecommErrorMessage.errorMessageObj.count === 1){
-					ecommErrorMessage.errorMessageObj.count = 0;
-					ecommErrorMessage.deleteErrorMessage();
-				}
-				deleteModal(); 
-				return;
-			};
-		});
-		//if product is not in user's cart, creates new cartObj and adds to user's cart 
-		if(itemAlreadyInCart === false){
-			var cartObj = new Product(productObj.name, productObj.price, productObj.img, quantity ) 
-			ecommCart.cartArray.push(cartObj);
-			ecommCart.subtotal(cartObj);
-			ecommCart.modifyInvCount(cartObj, quantity)
-			inputQuantity.value = "";
-			if(ecommErrorMessage.errorMessageObj.count === 1){
-				ecommErrorMessage.errorMessageObj.count = 0;
-				ecommErrorMessage.deleteErrorMessage();	  
-			} 
-			deleteModal();  
-			return;
-		};
-	};
 
 	function cancelAddToCart(){
 		console.log("not adding")
-	}
-
-	function deleteModal(){
-		var modal = document.getElementById("modal"); 
-		while(modal.firstChild){
-			modal.removeChild(modal.firstChild)
-		}
 	}
 }
 
@@ -385,9 +383,9 @@ function Order(){
 	this.orderTotal = function orderTotal(cartArray){
 		var total = 0; 
 		cartArray.forEach(function (cartObj){
-			total += cartObj.subtotal;
+			total += parseFloat(cartObj.subtotal); 
 		});
-		return total 
+		return total.toFixed(2)
 	} 
 	this.orderHistory = []; 
 
@@ -422,7 +420,7 @@ function Order(){
 			itemRow.appendChild(productPrice);
 
 			var productSubtotal = document.createElement("h3"); 
-			var productSubtotalText = document.createTextNode("$"+cartObj.subtotal.toFixed(2)); 
+			var productSubtotalText = document.createTextNode("$"+cartObj.subtotal); 
 			productSubtotal.appendChild(productSubtotalText);
 			itemRow.appendChild(productSubtotal); 
 		}) 
